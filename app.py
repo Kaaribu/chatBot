@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import openai
 
 app = Flask(__name__)
-openai.api_key = ''
+# openai.api_key = ''
 sessions = {}
 
 
@@ -24,6 +24,7 @@ def det_gpt_response(user_message, user_id):
     )
     session['history'] = conversation_history + response.choices[0].text.strip() + "\n"
     return response.choices[0].text.strip()
+
 
 @app.route('/chat', methods=['POST'])
 def chat():  # put application's code here
