@@ -10,6 +10,7 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
 # Function for Google Calendar Service
 def get_google_calendar_service():
     creds = None
+    creds_path = os.getenv('GOOGLE_OAUTH_CREDENTIALS')
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
         if not creds or not creds.valid:
