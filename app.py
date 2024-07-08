@@ -46,13 +46,12 @@ def chat():  # put application's code here
         topic = user_message.split()[-1]  # Assuming topic is the last word
         response = fetch_news(topic)
     elif 'remind me' in user_message.lower():
-        #  Here I'm extracting the event details from the user_message
-        event_details = {
-            'summary': 'Call John',
-            'start': '2023-07-10T10:00:00Z',
-            'end': '2023-07-10T10:30:00Z',
-        }
-        response = add_event_to_calendar(event_details)
+        event_details = parse_reminder(user_message)
+        if event_details:
+            response = add_event_to_calendar(event_details)
+        else:
+            response = "I couldn't understand the reminder details. Could you please specify again?"
+
     else:
         response = det_gpt_response(user_message, user_id)
 
@@ -60,8 +59,33 @@ def chat():  # put application's code here
 
 
 def fetch_news(topic):
-    # api_key = ''
-    url = f'https://newsapi.org/v2/top-headlines?q={topic}&apiKey=<KEY>'
+    url = f'https://newsapi.org/v2/top-headlines?q={topic}&apiKey={news_api_key}'
+    response = requests.get(url).json()
+    articles = response['articles']
+    news = [f"{article['title']} - {article['source']['name']}" for article in articles[:5]]
+    return "\n".join(news)
+
+def parse_reminder(user_message):
+    import re
+    from datetime import datetime, timedelta
+
+    match = re.search(r"remind me to (.+) at (\d+:\d+ (AM|PM))", user_message, re.IGNORECASE)
+    if match:
+        summary = match.group(1)
+        time_str = match.group(2)
+        time_obj = datetime.strptime(time_str, "%H:%M")
+        now = datetime.now()
+        reminder_time = datetime.combine(now.date(), time_obj.time())
+        if reminder_time < now:
+            reminder_time += timedelta(days=1)
+
+        event_details = {
+            'summary': summary,
+            'start': reminder_time.isoformat(),
+            'end': (reminder_time + timedelta(minutes=30)).isoformat()
+        }
+        return event_details
+    return None
 
 
 if __name__ == '__main__':
