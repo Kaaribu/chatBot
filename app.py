@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import openai
 import requests
 from dotenv import load_dotenv
@@ -7,12 +7,16 @@ from calendar_utils import add_event_to_calendar
 
 load_dotenv()  # Load environment variables from .env file
 
+app = Flask(__name__)
+
 # Use environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 news_api_key = os.getenv("NEWS_API_KEY")
 google_credentials_path = os.getenv("GOOGLE_CREDENTIALS_PATH")
+weather_api_key = os.getenv("WEATHER_API_KEY")
 
-app = Flask(__name__)
+
+# Session management
 sessions = {}
 
 
@@ -37,6 +41,11 @@ def det_gpt_response(user_message, user_id):
     return response.choices[0].text.strip()
 
 
+@app.route("/")
+def home():
+    return render_template('index.html')
+
+
 @app.route('/chat', methods=['POST'])
 def chat():  # put application's code here
     user_message = request.json.get('message')
@@ -51,7 +60,13 @@ def chat():  # put application's code here
             response = add_event_to_calendar(event_details)
         else:
             response = "I couldn't understand the reminder details. Could you please specify again?"
-
+    elif 'weather' in user_message.lower():
+        city = user_message.split()[-1]  # Assuming city is the last word
+        response = fetch_weather(city)
+    elif 'joke' in user_message.lower():
+        response = fetch_joke()
+    elif 'quote' in user_message.lower():
+        response = fetch_quote()
     else:
         response = det_gpt_response(user_message, user_id)
 
@@ -64,6 +79,29 @@ def fetch_news(topic):
     articles = response['articles']
     news = [f"{article['title']} - {article['source']['name']}" for article in articles[:5]]
     return "\n".join(news)
+
+
+def fetch_weather(city):
+    url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={weather_api_key}&units=metric'
+    response = requests.get(url).json()
+    if response.get('cod') != 200:
+        return f"Could not retrieve weather data for {city}. Please check the city name."
+    weather = response['weather'][0]['description']
+    temp = response['main']['temp']
+    return f"The current weather in {city} is {weather} with a temperature of {temp}°C"
+
+
+def fetch_joke():
+    url = f'http://api.icnublue.com/Jokes/random'
+    response = requests.get(url).json()
+    return f"{response['setup']} - {response['punchline']}"
+
+
+def fetch_quote():
+    url = f'http://api.icnublue.com/Quotes/random'
+    response = requests.get(url).json()
+    return f"{response['content']} - {response['author']}"
+
 
 def parse_reminder(user_message):
     import re
