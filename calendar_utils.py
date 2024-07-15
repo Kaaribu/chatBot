@@ -29,14 +29,20 @@ def get_google_calendar_service():
 
 # Function for adding an event to the calendar
 def add_event_to_calendar(event_details):
-    service = get_google_calendar_service()
-    event = {
-        'summary': event_details['summary'],
-        'start': {'dateTime': event_details['start'], 'timezone': 'UTC'},
-        'end': {'dateTime': event_details['end'], 'timezone': 'UTC'},
-    }
-    event = service.events().insert(calendarId='primary', body=event).execute()
-    return f"Event created: {event.get('htmlLink')}"
+    try:
+        credentials = Credentials.from_authorized_user_file('token.json', SCOPES)
+        service = build('calendar', 'v3', credentials=credentials)
+
+        event = {
+            'summary': event_details['summary'],
+            'start': {'dateTime': event_details['start'], 'timezone': 'UTC'},
+            'end': {'dateTime': event_details['end'], 'timezone': 'UTC'},
+        }
+
+        event = service.events().insert(calendarId='primary', body=event).execute()
+        return f"Event created: {event.get('htmlLink')}"
+    except Exception as e:
+        return f"An error occurred: {e}"
 
 
 

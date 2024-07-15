@@ -4,10 +4,15 @@ import openai
 import requests
 from dotenv import load_dotenv
 from calendar_utils import add_event_to_calendar
+from email_utils import send_email
+from state_manager import StateManager
 
 load_dotenv()  # Load environment variables from .env file
 
+# Initialize Flask app
 app = Flask(__name__)
+state_manager = StateManager()
+
 
 # Use environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -47,9 +52,7 @@ def home():
 
 
 @app.route('/chat', methods=['POST'])
-def chat():  # put application's code here
-    user_message = request.json.get('message')
-    user_id = request.json.get('user_id')
+def chat():
 
     if 'news' in user_message.lower():
         topic = user_message.split()[-1]  # Assuming topic is the last word
@@ -71,6 +74,36 @@ def chat():  # put application's code here
         response = det_gpt_response(user_message, user_id)
 
     return jsonify({'response': response})
+
+
+def process_message(message, user_id):
+    # Use Spacy for advanced NLP processing
+    doc = nlp(message)
+    intents = [ent_label_ for ent in doc.ents]
+
+    # Manage state and context
+    context = state_manager.get_context(user_id)
+    context['intents'] = intents
+
+    # Simple rule-based intent handling
+    if 'EVENT' in intents:
+        response = "I can help you schedule an event. When would you like to see it?"
+    elif 'EMAIL' in intents:
+        response = "I can send an email for you. What would you like the email to say?"
+    else:
+        # Fallback to OpenAI GPT-3 for general conversation
+        response = openai.Completion.create(
+            engine="davinci",
+            prompt=message,
+            max_tokens=150,
+        ).choices[0].text.strip()
+
+    state_manager.set_context(user_id, context)
+    return response, context
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 
 def fetch_news(topic):

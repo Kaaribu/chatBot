@@ -64,6 +64,8 @@ This project implements a simple AI-based chatbot using OpenAI's GPT-3 for natur
  /chatbot
 ├── app.py
 ├── calendar_utils.py
+├── email_utils.py
+├── state_manager.py
 ├── .env
 ├── templates
 │   └── index.html
