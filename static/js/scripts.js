@@ -1,3 +1,12 @@
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('send-button').addEventListener('click', sendMessage);
+    document.getElementById('user-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+});
+
 function sendMessage() {
     var userInput = document.getElementById("user-input").value;
     if (userInput.trim() === "") {
