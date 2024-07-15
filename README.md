@@ -51,3 +51,42 @@ This project implements a simple AI-based chatbot using OpenAI's GPT-3 for natur
 - Type messages in the input box and click "Send" to interact with the chatbot.
 - Commands like asking for news (news topic), setting reminders (remind me to do something at time), checking weather (weather city), jokes (tell me a joke), and quotes (give me a quote) are supported.
 
+## Example Commands
+
+- News: "Show me the latest news about technology."
+- Weather: "What's the weather in New York?"
+- Jokes: "Tell me a joke."
+- Quotes: "Give me an inspirational quote."
+- Set Reminder: "Remind me to call John at 5 PM tomorrow."
+
+## Project Structure
+
+ /chatbot
+├── app.py
+├── calendar_utils.py
+├── .env
+├── templates
+│   └── index.html
+├── static
+│   ├── css
+│   │   └── styles.css
+│   └── js
+│       └── scripts.js
+├── requirements.txt
+└── venv
+
+## Contributing
+
+Contributions are welcome! Feel free to fork the repository, create a new branch, and submit a pull request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- OpenAI for providing access to GPT-3.
+- Google for the Calendar API.
+- News API for news headlines.
+- OpenWeatherMap for weather data.
+
