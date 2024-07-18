@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM fully loaded and parsed')
     document.getElementById('send-button').addEventListener('click', sendMessage);
     document.getElementById('user-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -9,24 +8,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function sendMessage() {
-    var userInput = document.getElementById("user-input").value.trim();
-    console.log('User Input', userInput.value);
-    if (!userInput) {
+    var userInput = document.getElementById("user-input").value;
+    if (userInput.trim() === "") {
         return;
     }
 
-    const chatBox = document.getElementById("chat-box");
-
-    // User message
-    const userMessage = document.createElement("div");
+    var chatBox = document.getElementById("chat-box");
+    var userMessage = document.createElement("div");
     userMessage.className = "message user";
-    userMessage.textContent = `User: ${userInput}`;
+    userMessage.textContent = userInput;
     chatBox.appendChild(userMessage);
 
-    // Clear input field
     document.getElementById("user-input").value = "";
 
-    // Send user message to Flask backend
     fetch('/chat', {
         method: 'POST',
         headers: {
@@ -36,14 +30,11 @@ function sendMessage() {
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Server Response: ', data);  // Debugging statement
-        // Bot response
-        const botMessage = document.createElement("div");
+        var botMessage = document.createElement("div");
         botMessage.className = "message bot";
         botMessage.textContent = data.response;
         chatBox.appendChild(botMessage);
 
-        // Scroll to the bottom of the chat box
         chatBox.scrollTop = chatBox.scrollHeight;
     })
     .catch(error => {
