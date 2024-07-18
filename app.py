@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from calendar_utils import add_event_to_calendar
 from email_utils import send_email
 from state_manager import StateManager
+import spacy
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -19,6 +20,9 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 news_api_key = os.getenv("NEWS_API_KEY")
 google_credentials_path = os.getenv("GOOGLE_CREDENTIALS_PATH")
 weather_api_key = os.getenv("WEATHER_API_KEY")
+
+# Load spaCy model for NLP
+nlp = spacy.load("en_core_web_sm")
 
 
 # Session management
@@ -35,12 +39,12 @@ def det_gpt_response(user_message, user_id):
     session = get_session(user_id)
     conversation_history = session['history'] + f"\nUser: {user_message}\nAI:"
     response = openai.Completion.create(
-        engine=openai.Engine('gpt-4'),
+        engine="gpt-4",
         prompt=conversation_history,
         max_tokens=150,
         n=1,
         stop=None,
-        temperature=0.7, top_p=1, frequency_penalty=0.5,
+        temperature=0.7
     )
     session['history'] = conversation_history + response.choices[0].text.strip() + "\n"
     return response.choices[0].text.strip()
@@ -53,6 +57,12 @@ def home():
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    data = request.get_json()
+    user_message = data.get['message']
+    user_id = data.get('user_id', 'default_user')  # Default user ID if not provided
+
+    if not user_message:
+        return jsonify({'response': 'No message received.'}), 400
 
     if 'news' in user_message.lower():
         topic = user_message.split()[-1]  # Assuming topic is the last word
@@ -76,42 +86,12 @@ def chat():
     return jsonify({'response': response})
 
 
-def process_message(message, user_id):
-    # Use Spacy for advanced NLP processing
-    doc = nlp(message)
-    intents = [ent_label_ for ent in doc.ents]
-
-    # Manage state and context
-    context = state_manager.get_context(user_id)
-    context['intents'] = intents
-
-    # Simple rule-based intent handling
-    if 'EVENT' in intents:
-        response = "I can help you schedule an event. When would you like to see it?"
-    elif 'EMAIL' in intents:
-        response = "I can send an email for you. What would you like the email to say?"
-    else:
-        # Fallback to OpenAI GPT-3 for general conversation
-        response = openai.Completion.create(
-            engine="davinci",
-            prompt=message,
-            max_tokens=150,
-        ).choices[0].text.strip()
-
-    state_manager.set_context(user_id, context)
-    return response, context
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
-
 def fetch_news(topic):
     url = f'https://newsapi.org/v2/top-headlines?q={topic}&apiKey={news_api_key}'
     response = requests.get(url).json()
     articles = response['articles']
     news = [f"{article['title']} - {article['source']['name']}" for article in articles[:5]]
-    return "\n".join(news)
+    return "\n".join(news) if news else "No news articles found."
 
 
 def fetch_weather(city):
@@ -144,7 +124,7 @@ def parse_reminder(user_message):
     if match:
         summary = match.group(1)
         time_str = match.group(2)
-        time_obj = datetime.strptime(time_str, "%H:%M")
+        time_obj = datetime.strptime(time_str, "%I:%M %p")
         now = datetime.now()
         reminder_time = datetime.combine(now.date(), time_obj.time())
         if reminder_time < now:
@@ -159,8 +139,36 @@ def parse_reminder(user_message):
     return None
 
 
+def process_message(message, user_id):
+    # Use Spacy for advanced NLP processing
+    doc = nlp(message)
+    intents = [ent_label_ for ent in doc.ents]
+
+    # Manage state and context
+    context = state_manager.get_context(user_id)
+    context['intents'] = intents
+
+    # Simple rule-based intent handling
+    if 'EVENT' in intents:
+        response = "I can help you schedule an event. When would you like to see it?"
+    elif 'EMAIL' in intents:
+        response = "I can send an email for you. What would you like the email to say?"
+    else:
+        # Fallback to OpenAI GPT-3 for general conversation
+        response = openai.Completion.create(
+            engine=" ",
+            prompt=message,
+            max_tokens=150,
+        ).choices[0].text.strip()
+
+    state_manager.set_context(user_id, context)
+    return response, context
+
+
 if __name__ == '__main__':
     app.run(debug=True)
+
+
 
 
 
